@@ -8,21 +8,22 @@
 	var latMax = 34.09;
 	var lngMin = -118.50;
 	var lngMax = -118.30;
-	var slices = 3;
+	var slices = 2;
 	var slice = (latMax-latMin)/slices;
 	
 	for (var i = 0; i <= slices; i++) {
 		for (var j = 0; lngMin + j*slice <= lngMax; j++) {
-			//console.log(i + ' ' + j);
-			origins[i*slices + j] = {lat: latMin + i*slice, lng: lngMin + j*slice};
+			//console.log(i + j*slices);
 			
-			console.log(origins[i*slices + j]);
+			origins[i + j*(slices+1)] = {lat: latMin + i*slice, lng: lngMin + j*slice};
+			
+			//console.log(origins[i*slices + j]);
 		}
 	}
 		
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: {lat: 34.0424, lng: -118.4382},
-		zoom: 12
+		zoom: 13
 	});
 	
 	var service = new google.maps.DistanceMatrixService;
@@ -49,7 +50,7 @@
 			}
 			
 			new google.maps.visualization.HeatmapLayer({
-				data: mapData, map: map, radius: 90
+				data: mapData, map: map, radius: 120
 			});
 		}
 	})
