@@ -8,15 +8,16 @@
 	var latMax = 34.09;
 	var lngMin = -118.50;
 	var lngMax = -118.30;
-	var slices = 2;
+	var slices = 5;
 	var slice = (latMax-latMin)/slices;
+	var sliceCount = 0;
 	
 	for (var i = 0; i <= slices; i++) {
 		for (var j = 0; lngMin + j*slice <= lngMax; j++) {
 			//console.log(i + j*slices);
 			
 			origins[i + j*(slices+1)] = {lat: latMin + i*slice, lng: lngMin + j*slice};
-			
+			sliceCount++;
 			//console.log(origins[i*slices + j]);
 		}
 	}
@@ -25,35 +26,60 @@
 		center: {lat: 34.0424, lng: -118.4382},
 		zoom: 13
 	});
+
+	// distance data to plot
+	var mapData = [];
+	var subsetCursor = 0;
+	var ss = 20; //subset size
+	var subsetCount = Math.floor(sliceCount/ss);
 	
-	var service = new google.maps.DistanceMatrixService;
-	service.getDistanceMatrix({
-		
-		origins: origins,
-		destinations: [destination1],
-		travelMode: 'DRIVING',
-        unitSystem: google.maps.UnitSystem.METRIC,
-        avoidHighways: false,
-        avoidTolls: false
-		
-	}, function(response, status) {
-		if (status !== 'OK') {
-			alert('Error was: ' + status);
-		} else {
-			
-			var mapData = [];
-			for (var i = 0; i < origins.length; i++) {
-				
-				mapData[i] = {location: new google.maps.LatLng(origins[i].lat, origins[i].lng)};
-				mapData[i].weight = response.rows[i].elements[0].duration.value;
-				console.log(mapData[i]);
-			}
-			
-			new google.maps.visualization.HeatmapLayer({
-				data: mapData, map: map, radius: 120
-			});
+	// run google maps service multiple times
+	// probably going to have to make this recursive
+	for (var j = 0; j < subsetCount; j++) {
+
+		var originsSubset = []
+
+		for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
+			originsSubset[i] = origins[i+subsetCursor];
+			subsetCursor++;
 		}
-	})
+		console.log(originsSubset);
+
+		var service = new google.maps.DistanceMatrixService;
+		service.getDistanceMatrix({
+			
+			origins: originsSubset,
+			destinations: [destination1],
+			travelMode: 'DRIVING',
+	        unitSystem: google.maps.UnitSystem.METRIC,
+	        avoidHighways: false,
+	        avoidTolls: false
+			
+		}, function(response, status) {
+			if (status !== 'OK') {
+				alert('Error was: ' + status);
+			} else {
+				
+				for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
+
+					if (originsSubset[i]){
+						mapData[i+subsetCursor] = {location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng)};
+						mapData[i+subsetCursor].weight = response.rows[i].elements[0].duration.value;
+						console.log(originsSubset[i]);
+					}
+
+				}
+				
+			}
+		})
+	}
+	
+
+	// hmm this is asynchronous with the distance matrix
+	//console.log(mapData);
+	new google.maps.visualization.HeatmapLayer({
+		data: mapData, map: map, radius: 120
+	});
 }
 
 // from http://jsbin.com/fanofipusu/edit?html,output
