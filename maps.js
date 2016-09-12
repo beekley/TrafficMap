@@ -26,12 +26,15 @@
 		center: {lat: 34.0424, lng: -118.4382},
 		zoom: 13
 	});
+	
 
 	// distance data to plot
 	var mapData = [];
 	var subsetCursor = 0;
 	var ss = 20; //subset size
 	var subsetCount = Math.floor(sliceCount/ss);
+
+	//console.log(sliceCount);
 	
 	// run google maps service multiple times
 	// probably going to have to make this recursive
@@ -40,10 +43,11 @@
 		var originsSubset = []
 
 		for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
-			originsSubset[i] = origins[i+subsetCursor];
+			originsSubset[i] = origins[subsetCursor];
 			subsetCursor++;
+			//console.log(subsetCursor);
 		}
-		console.log(originsSubset);
+		//console.log(originsSubset);
 
 		var service = new google.maps.DistanceMatrixService;
 		service.getDistanceMatrix({
@@ -60,14 +64,17 @@
 				alert('Error was: ' + status);
 			} else {
 				
+				
+				
 				for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
 
-					if (originsSubset[i]){
-						mapData[i+subsetCursor] = {location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng)};
-						mapData[i+subsetCursor].weight = response.rows[i].elements[0].duration.value;
-						console.log(originsSubset[i]);
-					}
-
+					/*if (originsSubset[i]){
+						mapData[subsetCursor] = {location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng)};
+						mapData[subsetCursor].weight = response.rows[i].elements[0].duration.value;
+						//console.log(originsSubset[i]);
+						
+					}*/
+					
 				}
 				
 			}
