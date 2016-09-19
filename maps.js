@@ -64,29 +64,19 @@
 				alert('Error was: ' + status);
 			} else {
 				
-				
-				
-				for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
-
-					/*if (originsSubset[i]){
-						mapData[subsetCursor] = {location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng)};
-						mapData[subsetCursor].weight = response.rows[i].elements[0].duration.value;
-						//console.log(originsSubset[i]);
-						
-					}*/
-					
+				for (var i = 0; i<20; i++) {
+					mapData.push({location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng), weight: response.rows[i].elements[0].duration.value});
+					//mapData[i].weight = response.rows[i].elements[0].duration.value;
+					console.log(response.rows[i].elements[0].duration.value);
 				}
 				
+				
+				new google.maps.visualization.HeatmapLayer({
+					data: mapData, map: map, radius: 120
+				});
 			}
 		})
 	}
-	
-
-	// hmm this is asynchronous with the distance matrix
-	//console.log(mapData);
-	new google.maps.visualization.HeatmapLayer({
-		data: mapData, map: map, radius: 120
-	});
 }
 
 // from http://jsbin.com/fanofipusu/edit?html,output
