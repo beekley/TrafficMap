@@ -4,11 +4,11 @@
 	var destination1 = '607 Charles E Young Dr E, Los Angeles, CA 90095';
 	var origins = [];
 	
-	var latMin = 34.00;
+	var latMin = 33.80;
 	var latMax = 34.10;
 	var lngMin = -118.50;
-	var lngMax = -118.30;
-	var slices = 10;
+	var lngMax = -118.05;
+	var slices = 8;
 	var slice = (latMax-latMin)/slices;
 	var sliceCount = 0;
 	
@@ -24,7 +24,7 @@
 		
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: {lat: 34.0424, lng: -118.4382},
-		zoom: 13
+		zoom: 11
 	});
 	
 
@@ -70,7 +70,10 @@
 				var subsetMapData = [];
 				
 				for (var i = 0; i < ss; i++) {
-					subsetMapData.push({location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng), weight: response.rows[i].elements[0].duration.value});
+					if (response.rows[i].elements[0].status != "ZERO_RESULTS") {
+						subsetMapData.push({location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng), weight: response.rows[i].elements[0].duration.value});
+					}
+					
 				}
 				
 				//add subset's mapdata to total mapdata
@@ -92,7 +95,7 @@
 					
 					//console.log(totalMapData);
 					new google.maps.visualization.HeatmapLayer({
-						data: totalMapData, map: map, radius: 120
+						data: totalMapData, map: map, radius: 100
 					});
 				}
 				
