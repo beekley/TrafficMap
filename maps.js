@@ -1,112 +1,167 @@
- var map;
- function initMap() {
-	
-	var destination1 = '607 Charles E Young Dr E, Los Angeles, CA 90095';
-	var origins = [];
+// Constants
+var destination1 = '607 Charles E Young Dr E, Los Angeles, CA 90095';
+var destination2 = '3545 Long Beach Blvd, Long Beach, CA 90807';
+var mode1 = 'TRANSIT';
+var mode2 = 'TRANSIT';
+var delay = 2500;
+
+// Globally addressable vars
+var map;
+var origins = [];
+var mapData = [];
+var sliceCount = 0;
+
+// Debuggins
+var errorCount = 0;
+ 
+function initMap() {
 	
 	var latMin = 33.80;
 	var latMax = 34.10;
 	var lngMin = -118.50;
 	var lngMax = -118.05;
-	var slices = 8;
+	var slices = 10;
 	var slice = (latMax-latMin)/slices;
-	var sliceCount = 0;
 	
+	
+	// Create origins array
 	for (var i = 0; i <= slices; i++) {
 		for (var j = 0; lngMin + j*slice <= lngMax; j++) {
-			//console.log(i + j*slices);
 			
 			origins[i + j*(slices+1)] = {lat: latMin + i*slice, lng: lngMin + j*slice};
 			sliceCount++;
-			//console.log(origins[i*slices + j]);
+			
 		}
 	}
+	
+	console.log(sliceCount);
+	
+	calc(origins[0], destination1, mode1, 0, null);
+}
+
+function calc(origin, destination, travelMode, i, t1) {
+	
+	if (i == sliceCount) {
+		buildMap(sumTimes(mapData));
+		return;
+	}
+	
+	var ll = origin.lat + ', ' + origin.lng;
+	
+	var request = {
+		origin:ll,  //new google.maps.LatLng(origin.lat,origin.lng),
+		destination:destination,
+		travelMode:travelMode,
+		transitOptions: {
+			departureTime: new Date("2016-10-03T15:00:00")
+	    },
+		drivingOptions: {
+			departureTime: new Date("2016-10-03T15:00:00"),
+			trafficModel: 'bestguess'
+		}
+	};
+	
+	
+	var directionsService = new google.maps.DirectionsService;
+	directionsService.route(request, function(response, status) {
+		console.log(i, status);
 		
+		if (status == 'OVER_QUERY_LIMIT') {
+			errorCount++;
+		}
+		
+		if (i < sliceCount) {
+			
+			if (status == 'OK') {
+				
+				// if this is the calc for second destination, then log results and go to next origin
+				if (t1 != null) {
+					var t2 =  response.routes[0].legs[0].duration.value;
+					mapData[i] = {origin, t1, t2};
+					
+					setTimeout(function() {
+						calc(origins[i+1], destination1, mode1, i+1, null);
+					}, delay);
+					
+					//console.log()
+				} 
+				
+				// if this is the calc for the first destinatinon calc for second destination
+				else {
+					t1 =  response.routes[0].legs[0].duration.value;
+					
+					setTimeout(function() {
+						calc(origins[i], destination2, mode2, i, t1);
+					}, delay);
+					
+				} 
+			} 
+			
+			// if no results, skip to next origin
+			else {
+				setTimeout(function() {
+					calc(origins[i+1], destination1, mode1, i+1, null);
+				}, delay);
+			} 
+		} 
+		
+		else {
+			
+		}
+		
+		
+		
+	})
+}
+
+function sumTimes(md) {
+	
+	var md2 = []
+	
+	for (var i = 0; i < md.length; i++) {
+		if (typeof md[i] != 'undefined') {
+			md2.push({location: new google.maps.LatLng(md[i].origin.lat, md[i].origin.lng), weight: (md[i].t1 + md[i].t2)});
+		}
+	}
+	md2 = offset(md2);
+	console.log(md2);
+	return md2;
+}
+
+function buildMap(md) {
+	// build map
 	map = new google.maps.Map(document.getElementById('map'), {
-		center: {lat: 34.0424, lng: -118.4382},
+		center: {lat: 33.95, lng: -118.275},
 		zoom: 11
 	});
 	
-
-	// distance data to plot
-	var mapData = [];
-	var subsetCursor = 0;
-	var ss = 25; //subset size, number of slices in subset
-	var subsetCount = Math.floor(sliceCount/ss);
-	var subsetIndex = 0;
+	// Add heatmap layer
+	new google.maps.visualization.HeatmapLayer({
+		data: md, map: map, radius: 100//, maxIntensity: 4000
+	});
 	
-
-	//console.log(sliceCount);
-	
-	// run google maps service multiple times
-	// probably going to have to make this recursive
-	for (var j = 0; j < subsetCount; j++) {
-
-		let originsSubset = [];
-
-		for (var i = 0; i < ss && subsetCursor < sliceCount; i++) {
-			originsSubset[i] = origins[subsetCursor];
-			subsetCursor++;
-			//console.log(subsetCursor);
-		}
-		//console.log(originsSubset);
-
-		var service = new google.maps.DistanceMatrixService;
-		service.getDistanceMatrix({
-			
-			origins: originsSubset,
-			destinations: [destination1],
-			travelMode: 'DRIVING',
-	        unitSystem: google.maps.UnitSystem.METRIC,
-	        avoidHighways: false,
-	        avoidTolls: false
-			
-		}, function(response, status) {
-			if (status !== 'OK') {
-				alert('Error was: ' + status);
-			} else {
-				
-				// Map data for this particular subset
-				var subsetMapData = [];
-				
-				for (var i = 0; i < ss; i++) {
-					if (response.rows[i].elements[0].status != "ZERO_RESULTS") {
-						subsetMapData.push({location: new google.maps.LatLng(originsSubset[i].lat, originsSubset[i].lng), weight: response.rows[i].elements[0].duration.value});
-					}
-					
-				}
-				
-				//add subset's mapdata to total mapdata
-				mapData.push(subsetMapData);
-				
-				//increment subset counter
-				subsetIndex++;
-				
-				// if all subsets calculated, then add to map
-				if (subsetIndex >= subsetCount) {
-					var totalMapData = []
-					
-					for (var i = 0; i < mapData.length; i++) {
-						for (var k = 0; k < mapData[i].length; k++) {
-							totalMapData.push(mapData[i][k]);
-							//console.log(mapData[i][k]);
-						}
-					}
-					
-					//console.log(totalMapData);
-					new google.maps.visualization.HeatmapLayer({
-						data: totalMapData, map: map, radius: 100
-					});
-				}
-				
-				
-			}
-		})
-	}
+	console.log('Delay: ' + delay + ' Errors: ' + (100*errorCount/sliceCount) + '%');
 }
 
-function calculateSubset(originsSubset, destination) {
+function offset(md) {
 	
+	var minimum = 999999; // barf
+	
+	for (var i = 0; i < md.length; i++) {
+		if (typeof md[i] != 'undefined') {
+			if (md[i].weight < minimum) {
+				minimum = md[i].weight;
+			}
+		}
+	}
+	
+	for (var i = 0; i < md.length; i++) {
+		if (typeof md[i] != 'undefined') {
+			md[i].weight = 1 + md[i].weight - minimum;
+		}
+	}
+	
+	return md;
 }
 
 // from http://jsbin.com/fanofipusu/edit?html,output
