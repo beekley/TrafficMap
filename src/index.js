@@ -2,14 +2,18 @@
 const params = {
   center: {lat: 34.0261897, lng: -118.4115412},
   zoom: 14,
-  steps: 2,
-  stepSize: 0.005,
-  delay: 500,
+  steps: 4,
+  stepSize: 0.0035,
+  delay: 1000,
   destinations: [
     {
       address: '12121 Bluff Creek Dr #100, Los Angeles, CA 90094',
       travelMode: 'BICYCLING',
     },
+    // {
+    //   address: '5555 Valley Blvd, Los Angeles, CA 90032',
+    //   travelMode: 'DRIVING',
+    // },
   ],
 };
 let map = null;
@@ -33,37 +37,60 @@ async function initMap() {
 const createHeatmap = async map => {
   const coords = createCoords(params.steps, params.stepSize, params.center);
   const coordCount = coords.length;
+  const destCount = params.destinations.length;
   const data = new google.maps.MVCArray([]);
-  refreshHeatmap(map, data);
-  console.log(`Starting calculation for ${coordCount} locations.`);
+  console.log(`Starting calculation for ${coordCount} locations and ${destCount} destinations.`);
   for (let i = 0; i < coordCount; i += 1) {
     const coord = coords[i];
-    const destination = params.destinations[0];
-    try {
-      await delay(params.delay);
-      coord.weight = await getTransitData(coord.location, destination.address, destination.travelMode);
+    let sum = 0;
+    for (let j = 0; j < destCount; j += 1) {
+      const destination = params.destinations[j];
+      try {
+        await delay(params.delay);
+        sum += await getTransitData(coord.location, destination.address, destination.travelMode);
+      }
+      catch (error) {
+        console.log(error);
+      }
+      console.log(`${i+1}/${coordCount} - destination ${j+1}`);
     }
-    catch (error) {
-      console.log(error);
-    }
+    coord.weight = sum;
     data.push(coord);
-    console.log(`${i+1}/${coordCount}`);
   }
-  console.log('Done.')
-  console.log({data});
+  console.log('Done.');
+  console.log({ originaldata: data });
+  console.log('Normalizing.');
+  normalizeData(data);
+  console.log({ normalizedData: data });
+  createHeatmapLayer(map, data);
 };
 
 /**
- * @description Refreshes heatmap with new data. NOTE: This is the only interface with `params`
- * @param {Object} map - Google Maps API map instance
- * @param {Object} data - Google Maps API map instance
+ * @description Mutates original array to set min to 0
+ * @param {Object} data - weighted data array
  */
-const refreshHeatmap = (map, data) => new google.maps.visualization.HeatmapLayer({
+const normalizeData = data => {
+  const min = Math.min(...data.getArray().map(datum => datum.weight));
+  // const max = Math.max(data.map(datum => datum.weight));
+  data.forEach((datum, i) => {
+    datum.weight -= min;
+    data.setAt(i, datum);
+  });
+};
+
+/**
+ * @description
+ * @param {Object} map - Google Maps API map instance
+ * @param {Object} data - weighted data array
+ * @return {Object}
+ */
+const createHeatmapLayer = (map, data) => new google.maps.visualization.HeatmapLayer({
   data,
   map,
-  radius: 100,
-  opacity: 0.4,
-  maxIntensity: 3000,
+  radius: 70,
+  opacity: 0.6,
+  maxIntensity: 2000,
+  // dissipating: true,
 });
 
 /**
@@ -76,12 +103,13 @@ const refreshHeatmap = (map, data) => new google.maps.visualization.HeatmapLayer
 const createCoords = (steps, stepSize, center) => {
   // Create array of coordinates
   const coords = [];
+  const latLongRatio = 0.8;
   // Iterate from -steps to steps
   for (let x = -steps; x <= steps; x += 1) {
     for (let y = -steps; y <= steps; y += 1) {
       const coord = {
         location: new google.maps.LatLng(
-          center.lat + x * stepSize,
+          center.lat + x * stepSize * latLongRatio,
           center.lng + y * stepSize
         ),
       };
