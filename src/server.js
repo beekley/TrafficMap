@@ -53,6 +53,23 @@ const getTransitData = request => new Promise((resolve, reject) => {
   });
 });
 
+/**
+ * @description Gets the next uncalculated gridpoint
+ * @param {Object[]} grid
+ * @return {Object} gridpoint, or false if none found
+ */
+const findNextGridPoint = grid => {
+  // Iterate through rows
+  for (let r = 0; r < grid.length; r += 1) {
+    // Iterate through cols
+    for (let c = 0; c < grid[r].length; c += 1) {
+      // If no duration, return object
+      if (!grid[r][c].duration) return grid[r][c];
+    }
+  }
+  return false;
+};
+
 const path = `./output/${Date.now()}.json`;
 const grid = generateGrid(params);
 const output = {
@@ -66,3 +83,5 @@ const request = {
   destination: params.destinations[0].destination,
 };
 getTransitData(request).then(console.log).catch(console.log);
+
+console.log(findNextGridPoint(grid));
