@@ -1,7 +1,7 @@
 module.exports = {
   NW: {lat: 34.064198628171205, lng: -118.46974367439054},
   SE: {lat: 33.981282417908275, lng: -118.36352809359795},
-  steps: 2,
+  steps: 30,
   delay: 1000,
   destinations: [
     {

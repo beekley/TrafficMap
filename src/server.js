@@ -2,6 +2,10 @@
  * @description This process gathers transit duration data
  */
 const params = require('./params');
+const fs = require('fs');
+const googleMapsClient = require('@google/maps').createClient({
+  key: 'AIzaSyCFHfxbYk2N5nMKFCQl4ZYlW0W3MydfP7g',
+});
 
 /**
  * @description Generate a grid of latLong
@@ -35,4 +39,29 @@ const generateGrid = params => {
   return grid;
 };
 
-generateGrid(params).forEach(console.log)
+/**
+ * @description Calculates the duration for a given request
+ * @param {Object} request
+ * @return {Object}
+ */
+const getTransitData = request => new Promise((resolve, reject) => {
+  googleMapsClient.directions(request, (error, response) => {
+    if (error) return reject({ response, error });
+    const duration = response.json.routes[0].legs[0].duration.value;
+    resolve(duration);
+  });
+});
+
+const path = `./output/${Date.now()}.json`;
+const grid = generateGrid(params);
+const output = {
+  params,
+  grid,
+};
+fs.writeFile(path, JSON.stringify(output, null, 2), { flag: 'wx' }, console.log);
+
+const request = {
+  origin: grid[0][0].location,
+  destination: params.destinations[0].destination,
+};
+getTransitData(request).then(console.log).catch(console.log);
