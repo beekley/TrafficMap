@@ -2,9 +2,10 @@
  * @description This process gathers transit duration data
  */
 const params = require('./params');
+const secrets = require('./secrets');
 const fs = require('fs');
 const googleMapsClient = require('@google/maps').createClient({
-  key: 'AIzaSyCFHfxbYk2N5nMKFCQl4ZYlW0W3MydfP7g',
+  key: secrets.gmapkey,
 });
 
 /**
