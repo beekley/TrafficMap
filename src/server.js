@@ -4,6 +4,7 @@
 const params = require('./params');
 const secrets = require('./secrets');
 const fs = require('fs');
+const updateJsonFile = require('update-json-file');
 const googleMapsClient = require('@google/maps').createClient({
   key: secrets.gmapkey,
 });
@@ -41,7 +42,7 @@ const generateGrid = params => {
 };
 
 /**
- * @description Calculates the duration for a given request
+ * @description Calculate the duration for a given request
  * @param {Object} request
  * @return {Object}
  */
@@ -54,9 +55,9 @@ const getTransitData = request => new Promise((resolve, reject) => {
 });
 
 /**
- * @description Gets the next uncalculated gridpoint
+ * @description Get the next uncalculated gridpoint
  * @param {Object[]} grid
- * @return {Object} gridpoint, or false if none found
+ * @return {Object} reference to the gridpoint, or false if none found
  */
 const findNextGridPoint = grid => {
   // Iterate through rows
@@ -70,18 +71,74 @@ const findNextGridPoint = grid => {
   return false;
 };
 
-const path = `./output/${Date.now()}.json`;
-const grid = generateGrid(params);
-const output = {
-  params,
-  grid,
+/**
+ * @description Populate the grid with weights
+ * @param {Object[]} grid
+ * @param {Object} destination
+ * @param {String} path
+ */
+const gatherData = async (grid, destination, path) => {
+  // Attempt to gather data, otherwise retry
+  try {
+    const gridPoint = findNextGridPoint(grid);
+    const request = {
+      origin: gridPoint.location,
+      destination: destination.destination,
+    };
+    const duration = await getTransitData(request);
+    gridPoint.duration = duration;
+    console.log(gridPoint);
+    updateJsonFile(path, data => {
+      data.grid[gridPoint.row][gridPoint.col] = gridPoint;
+      return data;
+    });
+  }
+  catch (error) {
+    console.error(error);
+  }
+  await delay(1000);
+  gatherData(grid, destination, path);
 };
-fs.writeFile(path, JSON.stringify(output, null, 2), { flag: 'wx' }, console.log);
 
-const request = {
-  origin: grid[0][0].location,
-  destination: params.destinations[0].destination,
-};
-getTransitData(request).then(console.log).catch(console.log);
+/**
+ * @description Helper function to delay a set amount of time
+ * @param {Number} ms
+ * @return {Promise}
+ */
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-console.log(findNextGridPoint(grid));
+/**
+ * Start process
+ */
+if (process.argv[2]) {
+  const path = process.argv[2];
+  const destination = params.destinations[1];
+  updateJsonFile(path, data => {
+    const grid = data.grid;
+    try {
+      gatherData(grid, destination, path);
+    }
+    catch (error) {
+      console.log(error);
+    }
+    return data;
+  });
+}
+else {
+  const destination = params.destinations[1];
+  const path = `./output/${Date.now()}-${destination.name}.json`;
+  const grid = generateGrid(params);
+  const output = {
+    params,
+    grid,
+  };
+  fs.writeFile(path, JSON.stringify(output, null, 2), { flag: 'wx' }, error => {
+    if (error) return console.log(error);
+    try {
+      gatherData(grid, destination, path);
+    }
+    catch (error) {
+      console.log(error);
+    }
+  });
+}
