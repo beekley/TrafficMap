@@ -55,7 +55,7 @@ const createHeatmap = async map => {
       catch (error) {
         console.log(error);
       }
-      console.log(`${i+1}/${coordCount} - destination ${j+1}`);
+      console.log(`${i+1}/${coordCount} - destination ${j+1} - ${coord.durations[j]}`);
     }
     coord.weight = coord.durations.reduce((sum, cur) => sum + cur, 0);
     data.push(coord);

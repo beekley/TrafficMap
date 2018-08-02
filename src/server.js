@@ -7,6 +7,7 @@ const fs = require('fs');
 const updateJsonFile = require('update-json-file');
 const googleMapsClient = require('@google/maps').createClient({
   key: secrets.gmapkey,
+  Promise: Promise,
 });
 
 /**
@@ -46,13 +47,13 @@ const generateGrid = params => {
  * @param {Object} request
  * @return {Object}
  */
-const getTransitData = request => new Promise((resolve, reject) => {
-  googleMapsClient.directions(request, (error, response) => {
-    if (error) return reject({ response, error });
-    const duration = response.json.routes[0].legs[0].duration.value;
-    resolve(duration);
-  });
-});
+const getTransitData = async request => {
+  console.log(request);
+  const response = await googleMapsClient.directions(request).asPromise();
+  console.log(response);
+  const duration = response.json.routes[0].legs[0].duration.value;
+  return duration;
+};
 
 /**
  * @description Get the next uncalculated gridpoint
