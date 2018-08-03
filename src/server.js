@@ -8,6 +8,7 @@ const updateJsonFile = require('update-json-file');
 const googleMapsClient = require('@google/maps').createClient({
   key: secrets.gmapkey,
   Promise: Promise,
+  rate: {limit: 50},
 });
 
 /**
@@ -113,8 +114,8 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 if (process.argv[2]) {
   const path = process.argv[2];
-  const destination = params.destinations[1];
   updateJsonFile(path, data => {
+    const destination = data.params.destinations[1];
     const grid = data.grid;
     try {
       gatherData(grid, destination, path);
