@@ -45,13 +45,12 @@ const generateGrid = params => {
 
 /**
  * @description Calculate the duration for a given request
+ * Documentation: https://developers.google.com/maps/documentation/directions/intro
  * @param {Object} request
  * @return {Object}
  */
 const getTransitData = async request => {
-  console.log(request);
   const response = await googleMapsClient.directions(request).asPromise();
-  console.log(response);
   const duration = response.json.routes[0].legs[0].duration.value;
   return duration;
 };
@@ -78,14 +77,19 @@ const findNextGridPoint = grid => {
  * @param {Object[]} grid
  * @param {Object} destination
  * @param {String} path
+ * @param {Number} delayMs
+ * @return {Object} Nothing of significance
  */
-const gatherData = async (grid, destination, path) => {
+const gatherData = async (grid, destination, path, delayMs = params.delay) => {
   // Attempt to gather data, otherwise retry
   try {
     const gridPoint = findNextGridPoint(grid);
+    if (!gridPoint) return console.log(createContourOutput(grid));
     const request = {
       origin: gridPoint.location,
       destination: destination.destination,
+      departure_time: 1533740400,
+      mode: destination.mode,
     };
     const duration = await getTransitData(request);
     gridPoint.duration = duration;
@@ -94,13 +98,27 @@ const gatherData = async (grid, destination, path) => {
       data.grid[gridPoint.row][gridPoint.col] = gridPoint;
       return data;
     });
+    // If successful, reset delay amount
+    delayMs = params.delay;
   }
   catch (error) {
     console.error(error);
+    delayMs += params.delay;
   }
-  await delay(1000);
-  gatherData(grid, destination, path);
+  await delay(delayMs);
+  gatherData(grid, destination, path, delayMs);
 };
+
+/**
+ * @description Creates a string for use in http://contourmapcreator.urgr8.ch/
+ * @param {Object} grid
+ * @return {String}
+ */
+const createContourOutput = grid => grid
+  .map(row => row
+    .map(point => point.duration / 60)
+    .join('	')
+  ).join('\n');
 
 /**
  * @description Helper function to delay a set amount of time
@@ -127,7 +145,7 @@ if (process.argv[2]) {
   });
 }
 else {
-  const destination = params.destinations[1];
+  const destination = params.destinations[0];
   const path = `./output/${Date.now()}-${destination.name}.json`;
   const grid = generateGrid(params);
   const output = {
@@ -136,6 +154,7 @@ else {
   };
   fs.writeFile(path, JSON.stringify(output, null, 2), { flag: 'wx' }, error => {
     if (error) return console.log(error);
+    console.log('Created file at path:', path);
     try {
       gatherData(grid, destination, path);
     }
