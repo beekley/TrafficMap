@@ -93,6 +93,10 @@ const gatherData = async (grid, destination, path, delayMs = params.delay) => {
       departure_time: destination.departure_time,
       mode: destination.mode,
     };
+    if (destination.reverse) {
+      request.origin = request.destination;
+      request.destination = gridPoint.location;
+    }
     const duration = await getTransitData(request);
     gridPoint.duration = duration;
     console.log(gridPoint);
@@ -148,7 +152,7 @@ if (process.argv[2]) {
 }
 else {
   const destination = params.request;
-  const path = `./output/${Date.now()}-${destination.name}.json`;
+  const path = `./output/${Date.now()}-${destination.name}${destination.reverse ? '-reverse' : ''}.json`;
   const grid = generateGrid(params);
   const output = {
     params,
