@@ -45,12 +45,14 @@ const generateGrid = params => {
 
 /**
  * @description Calculate the duration for a given request
+ * Returns -1 if no route found
  * Documentation: https://developers.google.com/maps/documentation/directions/intro
  * @param {Object} request
  * @return {Object}
  */
 const getTransitData = async request => {
   const response = await googleMapsClient.directions(request).asPromise();
+  if (response.json.status === 'ZERO_RESULTS') return -1;
   const duration = response.json.routes[0].legs[0].duration.value;
   return duration;
 };
@@ -88,7 +90,7 @@ const gatherData = async (grid, destination, path, delayMs = params.delay) => {
     const request = {
       origin: gridPoint.location,
       destination: destination.destination,
-      departure_time: 1533740400,
+      departure_time: destination.departure_time,
       mode: destination.mode,
     };
     const duration = await getTransitData(request);
@@ -133,7 +135,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 if (process.argv[2]) {
   const path = process.argv[2];
   updateJsonFile(path, data => {
-    const destination = data.params.destinations[1];
+    const destination = data.params.request;
     const grid = data.grid;
     try {
       gatherData(grid, destination, path);
@@ -145,7 +147,7 @@ if (process.argv[2]) {
   });
 }
 else {
-  const destination = params.destinations[0];
+  const destination = params.request;
   const path = `./output/${Date.now()}-${destination.name}.json`;
   const grid = generateGrid(params);
   const output = {
