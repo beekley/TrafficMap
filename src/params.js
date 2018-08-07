@@ -15,7 +15,7 @@ module.exports = {
     name: 'drive-grifols',
     destination: '5555 Valley Blvd, Los Angeles, CA 90032',
     mode: 'driving',
-    departure_time: 1533774600,
-    reverse: true,
+    departure_time: 1533736800,
+    reverse: false,
   },
 };

@@ -53,8 +53,13 @@ const generateGrid = params => {
 const getTransitData = async request => {
   const response = await googleMapsClient.directions(request).asPromise();
   if (response.json.status === 'ZERO_RESULTS') return -1;
-  const duration = response.json.routes[0].legs[0].duration.value;
-  return duration;
+  try {
+    return response.json.routes[0].legs[0].duration_in_traffic.value;
+  }
+  catch (error) {
+    console.log('duration_in_traffic not available.');
+    return response.json.routes[0].legs[0].duration.value;
+  }
 };
 
 /**
