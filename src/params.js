@@ -8,8 +8,7 @@ module.exports = {
   //   name: 'bike-s37',
   //   destination: '12121 Bluff Creek Dr #100, Los Angeles, CA 90094',
   //   mode: 'bicycling',
-  //   departure_time: 1533774600,
-  //   reverse: true,
+  //   reverse: false,
   // },
   {
     name: 'drive-grifols',
