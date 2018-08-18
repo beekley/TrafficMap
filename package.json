@@ -1,0 +1,25 @@
+{
+  "name": "trafficmap",
+  "version": "1.0.0",
+  "description": "Briefly, the goal of this project is to create a heatmap of commute times to/from different parts of LA using the Google Maps API.",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beekley/TrafficMap.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/beekley/TrafficMap/issues"
+  },
+  "homepage": "https://github.com/beekley/TrafficMap#readme",
+  "dependencies": {
+    "@google/maps": "^0.5.5",
+    "update-json-file": "^1.1.1",
+    "wreck": "^14.0.2"
+  }
+}

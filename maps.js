@@ -13,41 +13,41 @@ var sliceCount = 0;
 
 // Debuggins
 var errorCount = 0;
- 
+
 function initMap() {
-	
+
 	var latMin = 33.80;
 	var latMax = 34.10;
 	var lngMin = -118.50;
 	var lngMax = -118.05;
 	var slices = 10;
 	var slice = (latMax-latMin)/slices;
-	
-	
+
+
 	// Create origins array
 	for (var i = 0; i <= slices; i++) {
 		for (var j = 0; lngMin + j*slice <= lngMax; j++) {
-			
+
 			origins[i + j*(slices+1)] = {lat: latMin + i*slice, lng: lngMin + j*slice};
 			sliceCount++;
-			
+
 		}
 	}
-	
+
 	console.log(sliceCount);
-	
+
 	calc(origins[0], destination1, mode1, 0, null);
 }
 
 function calc(origin, destination, travelMode, i, t1) {
-	
+
 	if (i == sliceCount) {
 		buildMap(sumTimes(mapData));
 		return;
 	}
-	
+
 	var ll = origin.lat + ', ' + origin.lng;
-	
+
 	var request = {
 		origin:ll,  //new google.maps.LatLng(origin.lat,origin.lng),
 		destination:destination,
@@ -60,64 +60,64 @@ function calc(origin, destination, travelMode, i, t1) {
 			trafficModel: 'bestguess'
 		}
 	};
-	
-	
+
+
 	var directionsService = new google.maps.DirectionsService;
 	directionsService.route(request, function(response, status) {
 		console.log(i, status);
-		
+
 		if (status == 'OVER_QUERY_LIMIT') {
 			errorCount++;
 		}
-		
+
 		if (i < sliceCount) {
-			
+
 			if (status == 'OK') {
-				
+
 				// if this is the calc for second destination, then log results and go to next origin
 				if (t1 != null) {
 					var t2 =  response.routes[0].legs[0].duration.value;
 					mapData[i] = {origin, t1, t2};
-					
+
 					setTimeout(function() {
 						calc(origins[i+1], destination1, mode1, i+1, null);
 					}, delay);
-					
+
 					//console.log()
-				} 
-				
+				}
+
 				// if this is the calc for the first destinatinon calc for second destination
 				else {
 					t1 =  response.routes[0].legs[0].duration.value;
-					
+
 					setTimeout(function() {
 						calc(origins[i], destination2, mode2, i, t1);
 					}, delay);
-					
-				} 
-			} 
-			
+
+				}
+			}
+
 			// if no results, skip to next origin
 			else {
 				setTimeout(function() {
 					calc(origins[i+1], destination1, mode1, i+1, null);
 				}, delay);
-			} 
-		} 
-		
-		else {
-			
+			}
 		}
-		
-		
-		
+
+		else {
+
+		}
+
+
+
 	})
 }
 
 function sumTimes(md) {
-	
+
 	var md2 = []
-	
+
 	for (var i = 0; i < md.length; i++) {
 		if (typeof md[i] != 'undefined') {
 			md2.push({location: new google.maps.LatLng(md[i].origin.lat, md[i].origin.lng), weight: (md[i].t1 + md[i].t2)});
@@ -134,19 +134,19 @@ function buildMap(md) {
 		center: {lat: 33.95, lng: -118.275},
 		zoom: 11
 	});
-	
+
 	// Add heatmap layer
 	new google.maps.visualization.HeatmapLayer({
 		data: md, map: map, radius: 100//, maxIntensity: 4000
 	});
-	
+
 	console.log('Delay: ' + delay + ' Errors: ' + (100*errorCount/sliceCount) + '%');
 }
 
 function offset(md) {
-	
+
 	var minimum = 999999; // barf
-	
+
 	for (var i = 0; i < md.length; i++) {
 		if (typeof md[i] != 'undefined') {
 			if (md[i].weight < minimum) {
@@ -154,13 +154,13 @@ function offset(md) {
 			}
 		}
 	}
-	
+
 	for (var i = 0; i < md.length; i++) {
 		if (typeof md[i] != 'undefined') {
 			md[i].weight = 1 + md[i].weight - minimum;
 		}
 	}
-	
+
 	return md;
 }
 
